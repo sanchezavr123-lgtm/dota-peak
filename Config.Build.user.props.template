@@ -1,0 +1,7 @@
+<Project>
+  <!-- Copy to Config.Build.user.props if you need to override the defaults. -->
+  <PropertyGroup>
+    <!-- <PeakGameRootDir>C:\Path\To\PEAK</PeakGameRootDir> -->
+    <!-- <PeakPluginsDir>$(PeakGameRootDir)\BepInEx\plugins\</PeakPluginsDir> -->
+  </PropertyGroup>
+</Project>
