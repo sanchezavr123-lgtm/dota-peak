@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "status": "technical_verification_required",
+  "checks": [
+    "PEAK game assemblies identified",
+    "BepInEx reference version verified",
+    "Player movement API verified",
+    "Input API verified",
+    "Scene/run lifecycle hook verified",
+    "Build dependency paths verified",
+    "Local build passes",
+    "Plugin loads in PEAK"
+  ],
+  "rule": "No playable-build claim before the final two checks pass."
+}
