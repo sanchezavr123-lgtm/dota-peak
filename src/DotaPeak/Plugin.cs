@@ -11,7 +11,7 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "sanchezavr123-lgtm.DotaPeak";
     public const string PluginName = "DotaPeak";
-    public const string PluginVersion = "0.2.0";
+    public const string PluginVersion = "0.3.0";
 
     internal static ManualLogSource Log { get; private set; } = null!;
 
@@ -29,14 +29,17 @@ public sealed class Plugin : BaseUnityPlugin
     private float abilityCooldown;
     private float blinkCooldown;
     private float bladeFuryTime;
-    private float runTime;
     private float goldTimer;
     private bool heroMenu;
     private bool shopMenu;
     private GameObject? hookVisual;
+    private float baseMovementModifier = 1f;
+    private bool movementBaselineCaptured;
 
     private const int BlinkCost = 50;
     private const int BootsCost = 25;
+    private const float BootsMultiplier = 1.12f;
+    private const float BladeFuryMultiplier = 1.35f;
 
     private enum Hero
     {
@@ -67,9 +70,9 @@ public sealed class Plugin : BaseUnityPlugin
     {
         if (!enabledConfig.Value) return;
 
-        runTime += Time.deltaTime;
         TickCooldowns();
         AwardTimeGold();
+        ApplyMovementModifier();
 
         if (Input.GetKeyDown(menuKey.Value))
         {
@@ -152,7 +155,7 @@ public sealed class Plugin : BaseUnityPlugin
 
         if (!SpendGold(BootsCost)) return;
         savedBoots.Value = true;
-        Log.LogInfo("Purchased Boots of Speed. Passive movement integration is queued for the verified PEAK movement API.");
+        Log.LogInfo("Purchased Boots of Speed: movement modifier will use the PEAK CharacterMovement API.");
     }
 
     private void BuyBlink()
@@ -182,10 +185,11 @@ public sealed class Plugin : BaseUnityPlugin
 
     private void UsePudgeHook()
     {
-        Transform? player = GetPlayerTransform();
+        Character? character = Character.localCharacter;
         Camera? camera = Camera.main;
-        if (player == null || camera == null) return;
+        if (character == null || camera == null) return;
 
+        Vector3 origin = character.Center;
         Ray ray = new(camera.transform.position, camera.transform.forward);
         if (!Physics.Raycast(ray, out RaycastHit hit, 35f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
         {
@@ -194,11 +198,11 @@ public sealed class Plugin : BaseUnityPlugin
             return;
         }
 
-        Vector3 offset = hit.point - player.position;
+        Vector3 offset = hit.point - origin;
         if (offset.magnitude > 2.5f)
         {
             Vector3 destination = hit.point - offset.normalized * 2f;
-            MovePlayer(player, destination);
+            WarpCharacter(character, destination);
             CreateHookVisual(camera.transform.position, hit.point);
         }
 
@@ -210,7 +214,7 @@ public sealed class Plugin : BaseUnityPlugin
     {
         bladeFuryTime = 3f;
         abilityCooldown = 12f;
-        Log.LogInfo("Juggernaut Blade Fury activated for 3 seconds.");
+        Log.LogInfo("Juggernaut Blade Fury activated for 3 seconds: 1.35x PEAK movement modifier.");
     }
 
     private void UseBlink()
@@ -223,41 +227,46 @@ public sealed class Plugin : BaseUnityPlugin
 
         if (blinkCooldown > 0f) return;
 
-        Transform? player = GetPlayerTransform();
+        Character? character = Character.localCharacter;
         Camera? camera = Camera.main;
-        if (player == null || camera == null) return;
+        if (character == null || camera == null) return;
 
-        Vector3 origin = player.position;
+        Vector3 origin = character.Center;
         Vector3 destination = origin + camera.transform.forward * 10f;
 
         if (Physics.Raycast(origin + Vector3.up * 0.5f, camera.transform.forward, out RaycastHit hit, 10f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
             destination = hit.point - camera.transform.forward * 1.5f;
 
-        MovePlayer(player, destination);
+        WarpCharacter(character, destination);
         blinkCooldown = 12f;
         Log.LogInfo($"Blink -> {destination}");
     }
 
-    private void MovePlayer(Transform player, Vector3 destination)
+    private static void WarpCharacter(Character character, Vector3 destination)
     {
-        CharacterController? controller = player.GetComponent<CharacterController>();
-        if (controller != null)
+        character.WarpPlayer(destination, false);
+    }
+
+    private void ApplyMovementModifier()
+    {
+        Character? character = Character.localCharacter;
+        if (character == null || character.refs == null || character.refs.movement == null)
         {
-            controller.enabled = false;
-            player.position = destination;
-            controller.enabled = true;
+            movementBaselineCaptured = false;
             return;
         }
 
-        Rigidbody? body = player.GetComponent<Rigidbody>();
-        if (body != null)
+        if (!movementBaselineCaptured)
         {
-            body.position = destination;
-            body.linearVelocity = Vector3.zero;
-            return;
+            baseMovementModifier = character.refs.movement.movementModifier;
+            movementBaselineCaptured = true;
         }
 
-        player.position = destination;
+        float multiplier = savedBoots.Value ? BootsMultiplier : 1f;
+        if (bladeFuryTime > 0f)
+            multiplier *= BladeFuryMultiplier;
+
+        character.refs.movement.movementModifier = baseMovementModifier * multiplier;
     }
 
     private void CreateHookVisual(Vector3 start, Vector3 end)
@@ -274,22 +283,6 @@ public sealed class Plugin : BaseUnityPlugin
         line.endWidth = 0.075f;
         line.material = new Material(Shader.Find("Sprites/Default"));
         Destroy(hookVisual, 0.18f);
-    }
-
-    private Transform? GetPlayerTransform()
-    {
-        Camera? camera = Camera.main;
-        if (camera == null) return null;
-
-        Transform current = camera.transform;
-        while (current.parent != null && current.parent != current)
-        {
-            current = current.parent;
-            if (current.GetComponent<Rigidbody>() != null || current.GetComponent<CharacterController>() != null)
-                return current;
-        }
-
-        return camera.transform.root;
     }
 
     private static Hero ParseHero(string value)
@@ -315,7 +308,7 @@ public sealed class Plugin : BaseUnityPlugin
             GUI.Label(new Rect(35, 180, 350, 25), "1 - Pudge");
             GUI.Label(new Rect(35, 208, 350, 25), "   Q: Meat Hook traversal");
             GUI.Label(new Rect(35, 236, 350, 25), "2 - Juggernaut");
-            GUI.Label(new Rect(35, 264, 350, 25), "   Q: Blade Fury state");
+            GUI.Label(new Rect(35, 264, 350, 25), "   Q: Blade Fury 1.35x speed");
         }
 
         if (shopMenu)
@@ -323,7 +316,7 @@ public sealed class Plugin : BaseUnityPlugin
             GUI.Box(new Rect(15, 150, 390, 170), "Dota Shop");
             GUI.Label(new Rect(35, 180, 350, 25), $"1 - Boots of Speed ({BootsCost}) {(savedBoots.Value ? "OWNED" : "")}");
             GUI.Label(new Rect(35, 215, 350, 25), $"2 - Blink ({BlinkCost}) {(savedBlink.Value ? "OWNED" : "")}");
-            GUI.Label(new Rect(35, 250, 350, 25), "Gold is earned during the solo climb.");
+            GUI.Label(new Rect(35, 250, 350, 25), "Gold: +5 every 45 seconds of the climb.");
             GUI.Label(new Rect(35, 278, 350, 25), "B - close shop");
         }
     }
