@@ -60,10 +60,10 @@ public sealed class Plugin : BaseUnityPlugin
     {
         Log = Logger;
         enabledConfig = Config.Bind("DotaPeak", "Enabled", true, "Enable the DotaPeak gameplay layer.");
-        abilityKey = Config.Bind("Controls", "Ability", KeyCode.Q, "Selected hero ability.");
+        abilityKey = Config.Bind("Controls", "AbilityV2", KeyCode.Z, "Dota hero ability. Z avoids PEAK drop/throw.");
         shopKey = Config.Bind("Controls", "Shop", KeyCode.B, "Open the Dota item shop.");
-        blinkKey = Config.Bind("Controls", "Blink", KeyCode.E, "Use Blink when owned.");
-        sellKey = Config.Bind("Controls", "SellLoot", KeyCode.V, "Sell a nearby PEAK chest loot cache. V avoids PEAK emotion controls.");
+        blinkKey = Config.Bind("Controls", "BlinkV2", KeyCode.C, "Use Blink when owned. C avoids PEAK interaction.");
+        sellKey = Config.Bind("Controls", "SellLootV2", KeyCode.X, "Sell nearby PEAK loot. X avoids PEAK emote, voice and item controls.");
         savedGold = Config.Bind("Save", "Gold", 0, "Persistent DotaPeak gold balance.");
         savedBlink = Config.Bind("Save", "Blink", false, "Whether Blink has been purchased.");
         savedBoots = Config.Bind("Save", "BootsOfSpeed", false, "Whether Boots of Speed have been purchased.");
@@ -535,8 +535,8 @@ public sealed class Plugin : BaseUnityPlugin
         GUI.Label(new Rect(x + 28f, y + 20f, w - 56f, 34f), "CHOOSE YOUR HERO", UiSkin.Title);
         GUI.Label(new Rect(x + 28f, y + 54f, w - 56f, 24f), "Your choice starts the Dota × PEAK run.", UiSkin.Muted);
 
-        DrawHeroButton(new Rect(x + 28f, y + 94f, 258f, 185f), "PUDGE", "Q  MEAT HOOK", "Mobility / rescue", Hero.Pudge);
-        DrawHeroButton(new Rect(x + 314f, y + 94f, 258f, 185f), "TINY", "Q  TOSS", "Traversal / impact", Hero.Tiny);
+        DrawHeroButton(new Rect(x + 28f, y + 94f, 258f, 185f), "PUDGE", "Z  MEAT HOOK", "Mobility / rescue", Hero.Pudge);
+        DrawHeroButton(new Rect(x + 314f, y + 94f, 258f, 185f), "TINY", "Z  TOSS", "Traversal / impact", Hero.Tiny);
 
         GUI.Label(new Rect(x + 28f, y + 288f, w - 56f, 24f), "[1] PUDGE     [2] TINY", UiSkin.Muted);
     }
