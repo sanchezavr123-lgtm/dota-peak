@@ -1,30 +1,15 @@
 {
-  "version": 1,
+  "version": 2,
+  "host_game": "PEAK",
+  "mode": "solo",
+  "core_goal": "climb_to_the_top",
   "systems": [
-    {
-      "id": "hero_selection",
-      "status": "planned",
-      "host": "PEAK"
-    },
-    {
-      "id": "abilities",
-      "status": "planned",
-      "host": "PEAK"
-    },
-    {
-      "id": "gold",
-      "status": "planned",
-      "host": "PEAK"
-    },
-    {
-      "id": "shop",
-      "status": "planned",
-      "host": "PEAK"
-    },
-    {
-      "id": "items",
-      "status": "planned",
-      "host": "PEAK"
-    }
+    {"id":"hero_selection","status":"planned","priority":1},
+    {"id":"abilities","status":"planned","priority":1},
+    {"id":"solo_run_state","status":"planned","priority":1},
+    {"id":"gold","status":"planned","priority":2},
+    {"id":"shop","status":"planned","priority":2},
+    {"id":"items","status":"planned","priority":2},
+    {"id":"save_settings","status":"planned","priority":3}
   ]
 }
