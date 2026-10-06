@@ -3,7 +3,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>com.github.sanchezavr123-lgtm.DotaPeak</AssemblyName>
     <AssemblyTitle>Dota x PEAK</AssemblyTitle>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
