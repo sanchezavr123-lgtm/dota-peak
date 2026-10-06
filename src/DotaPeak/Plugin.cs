@@ -98,6 +98,7 @@ public sealed class Plugin : BaseUnityPlugin
 
     private void TickTimers()
     {
+        UpdateCameraShake();
         abilityCooldown = Mathf.Max(0f, abilityCooldown - Time.deltaTime);
         blinkCooldown = Mathf.Max(0f, blinkCooldown - Time.deltaTime);
         pullTime = Mathf.Max(0f, pullTime - Time.deltaTime);
@@ -320,6 +321,14 @@ public sealed class Plugin : BaseUnityPlugin
         hookEffect = new GameObject("DotaPeak_MeatHook");
         HookProjectile projectile = hookEffect.AddComponent<HookProjectile>();
         projectile.Initialize(start, target, hit);
+    }
+
+    private void UpdateCameraShake()
+    {
+        Camera? cam = Camera.main;
+        if (cam == null || cameraShake <= 0f) return;
+        float strength = cameraShake * 0.045f;
+        cam.transform.localPosition += new Vector3(UnityEngine.Random.Range(-strength, strength), UnityEngine.Random.Range(-strength, strength), 0f);
     }
 
     private void UseTinyToss()
