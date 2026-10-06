@@ -6,7 +6,8 @@
     </RestoreAdditionalProjectSources>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BepInEx.Core" Version="5.4.23.3" />
+    <!-- 5.4.21 is the stable NuGet package version used by current PEAK modding projects. -->
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
   </ItemGroup>
