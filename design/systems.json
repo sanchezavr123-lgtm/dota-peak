@@ -1,15 +1,15 @@
 {
-  "version": 2,
+  "version": 3,
   "host_game": "PEAK",
   "mode": "solo",
   "core_goal": "climb_to_the_top",
   "systems": [
-    {"id":"hero_selection","status":"planned","priority":1},
-    {"id":"abilities","status":"planned","priority":1},
-    {"id":"solo_run_state","status":"planned","priority":1},
-    {"id":"gold","status":"planned","priority":2},
-    {"id":"shop","status":"planned","priority":2},
-    {"id":"items","status":"planned","priority":2},
-    {"id":"save_settings","status":"planned","priority":3}
+    {"id":"hero_selection","status":"implemented_prototype","priority":1,"controls":"F1, 1, 2"},
+    {"id":"abilities","status":"implemented_prototype","priority":1,"controls":"Q"},
+    {"id":"solo_run_state","status":"implemented_prototype","priority":1,"notes":"Persistent hero, gold and purchased items via BepInEx config."},
+    {"id":"gold","status":"implemented_prototype","priority":2,"notes":"+5 gold every 45 seconds survived."},
+    {"id":"shop","status":"implemented_prototype","priority":2,"controls":"B"},
+    {"id":"items","status":"implemented_prototype","priority":2,"notes":"Blink uses PEAK Character.WarpPlayer; Boots modify PEAK CharacterMovement."},
+    {"id":"save_settings","status":"implemented_prototype","priority":3}
   ]
 }
