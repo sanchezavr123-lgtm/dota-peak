@@ -12,17 +12,15 @@ public sealed class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "sanchezavr123-lgtm.DotaPeak";
     public const string PluginName = "DotaPeak";
-    public const string PluginVersion = "1.0.0";
+    public const string PluginVersion = "1.1.0";
 
     internal static ManualLogSource Log { get; private set; } = null!;
 
     private ConfigEntry<bool> enabledConfig = null!;
     private ConfigEntry<KeyCode> abilityKey = null!;
-    private ConfigEntry<KeyCode> menuKey = null!;
     private ConfigEntry<KeyCode> shopKey = null!;
     private ConfigEntry<KeyCode> blinkKey = null!;
     private ConfigEntry<KeyCode> sellKey = null!;
-    private ConfigEntry<string> savedHero = null!;
     private ConfigEntry<int> savedGold = null!;
     private ConfigEntry<bool> savedBlink = null!;
     private ConfigEntry<bool> savedBoots = null!;
@@ -38,7 +36,10 @@ public sealed class Plugin : BaseUnityPlugin
     private float pullTime;
     private bool heroMenu;
     private bool shopMenu;
-    private bool eventMenu;
+    private bool heroSelectionRequired = true;
+    private bool playerWasPresent;
+    private string eventTitle = string.Empty;
+    private string eventSubtitle = string.Empty;
     private bool movementBaselineCaptured;
     private float baseMovementModifier = 1f;
     private GameObject? hookEffect;
@@ -60,15 +61,13 @@ public sealed class Plugin : BaseUnityPlugin
         Log = Logger;
         enabledConfig = Config.Bind("DotaPeak", "Enabled", true, "Enable the DotaPeak gameplay layer.");
         abilityKey = Config.Bind("Controls", "Ability", KeyCode.Q, "Selected hero ability.");
-        menuKey = Config.Bind("Controls", "HeroMenu", KeyCode.F1, "Open hero selection.");
         shopKey = Config.Bind("Controls", "Shop", KeyCode.B, "Open the Dota item shop.");
         blinkKey = Config.Bind("Controls", "Blink", KeyCode.E, "Use Blink when owned.");
-        sellKey = Config.Bind("Controls", "SellLoot", KeyCode.R, "Sell a nearby PEAK chest loot cache.");
-        savedHero = Config.Bind("Save", "Hero", "Pudge", "Last selected hero.");
+        sellKey = Config.Bind("Controls", "SellLoot", KeyCode.V, "Sell a nearby PEAK chest loot cache. V avoids PEAK emotion controls.");
         savedGold = Config.Bind("Save", "Gold", 0, "Persistent DotaPeak gold balance.");
         savedBlink = Config.Bind("Save", "Blink", false, "Whether Blink has been purchased.");
         savedBoots = Config.Bind("Save", "BootsOfSpeed", false, "Whether Boots of Speed have been purchased.");
-        hero = ParseHero(savedHero.Value);
+        hero = Hero.Pudge;
         Log.LogInfo($"{PluginName} {PluginVersion} loaded. PEAK host confirmed.");
     }
 
@@ -76,17 +75,26 @@ public sealed class Plugin : BaseUnityPlugin
     {
         if (!enabledConfig.Value) return;
 
+        Character? currentCharacter = Character.localCharacter;
+        HandleRunLifecycle(currentCharacter);
+
         TickTimers();
         AwardTimeGold();
         TickRunEvents();
         ApplyMovementModifier();
         TryDetectNearbyChest();
 
-        if (Input.GetKeyDown(menuKey.Value)) { heroMenu = !heroMenu; shopMenu = false; eventMenu = false; }
-        if (Input.GetKeyDown(shopKey.Value)) { shopMenu = !shopMenu; heroMenu = false; eventMenu = false; }
-        if (heroMenu) { HandleHeroMenu(); return; }
-        if (shopMenu) { HandleShop(); return; }
-        if (eventMenu) { if (Input.GetKeyDown(KeyCode.Escape)) eventMenu = false; return; }
+        if (!heroSelectionRequired && Input.GetKeyDown(shopKey.Value))
+            shopMenu = !shopMenu;
+
+        if (!heroSelectionRequired && shopMenu)
+            HandleShop();
+
+        if (heroSelectionRequired)
+        {
+            HandleHeroMenu();
+            return;
+        }
 
         if (Input.GetKeyDown(sellKey.Value)) SellNearestLoot();
         if (Input.GetKeyDown(blinkKey.Value)) UseBlink();
@@ -95,6 +103,51 @@ public sealed class Plugin : BaseUnityPlugin
             if (hero == Hero.Pudge) UsePudgeHook();
             else UseTinyToss();
         }
+    }
+
+    private void HandleRunLifecycle(Character? currentCharacter)
+    {
+        if (currentCharacter == null)
+        {
+            playerWasPresent = false;
+            return;
+        }
+
+        if (playerWasPresent) return;
+
+        playerWasPresent = true;
+        BeginNewRun();
+    }
+
+    private void BeginNewRun()
+    {
+        // Purchases are run-local. Old config values are overwritten here so they cannot leak into a new climb.
+        savedBlink.Value = false;
+        savedBoots.Value = false;
+
+        abilityCooldown = 0f;
+        blinkCooldown = 0f;
+        goldTimer = 0f;
+        eventTimer = 0f;
+        eventMessageTimer = 0f;
+        cameraShake = 0f;
+        cameraShakeOffset = Vector3.zero;
+        movementBaselineCaptured = false;
+
+        for (int i = lootPiles.Count - 1; i >= 0; i--)
+        {
+            if (lootPiles[i].Root != null) Destroy(lootPiles[i].Root);
+            lootPiles.RemoveAt(i);
+        }
+
+        if (hookEffect != null) { Destroy(hookEffect); hookEffect = null; }
+        if (tinyEffect != null) { Destroy(tinyEffect); tinyEffect = null; }
+
+        hero = Hero.Pudge;
+        shopMenu = false;
+        heroSelectionRequired = true;
+        ShowEvent("CHOOSE YOUR HERO", "PUDGE or TINY — pick your climber.", 3f);
+        Log.LogInfo("DotaPeak: new run detected; run-local items and effects reset.");
     }
 
     private void TickTimers()
@@ -234,9 +287,9 @@ public sealed class Plugin : BaseUnityPlugin
     private void SelectHero(Hero selected)
     {
         hero = selected;
-        savedHero.Value = hero.ToString();
         abilityCooldown = 0f;
         heroMenu = false;
+        heroSelectionRequired = false;
         if (hookEffect != null) { Destroy(hookEffect); hookEffect = null; }
         if (tinyEffect != null) { Destroy(tinyEffect); tinyEffect = null; }
         ShowEvent("HERO SELECTED", hero == Hero.Pudge ? "PUDGE — MEAT HOOK" : "TINY — TOSS", 3f);
@@ -432,11 +485,10 @@ public sealed class Plugin : BaseUnityPlugin
         c.refs.movement.movementModifier = baseMovementModifier * (savedBoots.Value ? BootsMultiplier : 1f);
     }
 
-    private static Hero ParseHero(string value) => Enum.TryParse(value, true, out Hero result) ? result : Hero.Pudge;
-
     private void ShowEvent(string title, string subtitle, float seconds)
     {
-        eventMenu = true;
+        eventTitle = title;
+        eventSubtitle = subtitle;
         eventMessageTimer = seconds;
         Log.LogInfo($"DotaPeak Event: {title} / {subtitle}");
     }
@@ -445,77 +497,98 @@ public sealed class Plugin : BaseUnityPlugin
     {
         if (!enabledConfig.Value) return;
 
-        float w = 520f;
-        float h = heroMenu || shopMenu ? 390f : 92f;
-        float x = (Screen.width - w) * 0.5f;
-        float y = 26f;
+        if (heroSelectionRequired)
+        {
+            DrawHeroSelection();
+            return;
+        }
 
-        GUI.Box(new Rect(x, y, w, h), GUIContent.none, UiSkin.Panel);
-        GUI.Label(new Rect(x + 24f, y + 14f, 260f, 28f), "DOTA  ×  PEAK", UiSkin.Title);
-        GUI.Label(new Rect(x + 350f, y + 17f, 140f, 24f), $"{savedGold.Value} GOLD", UiSkin.Gold);
+        // No top HUD. Gameplay is kept clean; the only persistent control is the shop in the lower-left.
+        float shopButtonWidth = 190f;
+        float shopButtonHeight = 42f;
+        Rect shopToggle = new Rect(24f, Screen.height - shopButtonHeight - 24f, shopButtonWidth, shopButtonHeight);
+        if (!shopMenu)
+        {
+            if (GUI.Button(shopToggle, "B  DOTA SHOP", UiSkin.ShopButton))
+                shopMenu = true;
+        }
+        else
+        {
+            DrawShopPanel();
+        }
 
-        GUI.Label(new Rect(x + 24f, y + 48f, 220f, 22f), hero == Hero.Pudge ? "PUDGE" : "TINY", UiSkin.Hero);
-        GUI.Label(new Rect(x + 160f, y + 48f, 300f, 22f),
-            hero == Hero.Pudge ? $"Q  MEAT HOOK  {CooldownText(abilityCooldown)}" : $"Q  TOSS  {CooldownText(abilityCooldown)}",
-            UiSkin.Body);
-        GUI.Label(new Rect(x + 24f, y + 70f, 450f, 22f),
-            "F1 HEROES     B SHOP     E BLINK     R SELL LOOT",
-            UiSkin.Muted);
-
-        if (heroMenu) DrawHeroMenu(x, y + 100f, w - 40f);
-        if (shopMenu) DrawShop(x, y + 100f, w - 40f);
-        if (eventMenu && eventMessageTimer > 0f && !heroMenu && !shopMenu) DrawToast();
+        if (eventMessageTimer > 0f)
+            DrawToast();
 
         if (cameraShake > 0f)
-        {
-            // Visual feedback is intentionally driven through the HUD, while gameplay movement remains PEAK-native.
-            GUI.Label(new Rect(Screen.width * 0.5f - 110f, Screen.height - 90f, 220f, 30f), "MOUNTAIN SHAKES", UiSkin.Alert);
-        }
+            GUI.Label(new Rect(Screen.width * 0.5f - 110f, Screen.height - 72f, 220f, 30f), "MOUNTAIN SHAKES", UiSkin.Alert);
     }
 
-    private void DrawHeroMenu(float x, float y, float width)
+    private void DrawHeroSelection()
     {
-        GUI.Label(new Rect(x + 24f, y, width - 48f, 32f), "SELECT HERO", UiSkin.Title);
-        DrawCard(new Rect(x + 24f, y + 48f, 210f, 220f), "PUDGE", "MEAT HOOK", "Mobility / Rescue", hero == Hero.Pudge, "1");
-        DrawCard(new Rect(x + 246f, y + 48f, 210f, 220f), "TINY", "TOSS", "Traversal / Impact", hero == Hero.Tiny, "2");
-        GUI.Label(new Rect(x + 24f, y + 282f, width - 48f, 28f), "Choose a hero. PEAK remains the climb.", UiSkin.Muted);
+        float w = 600f;
+        float h = 330f;
+        float x = (Screen.width - w) * 0.5f;
+        float y = (Screen.height - h) * 0.5f;
+
+        GUI.Box(new Rect(x, y, w, h), GUIContent.none, UiSkin.Panel);
+        GUI.Label(new Rect(x + 28f, y + 20f, w - 56f, 34f), "CHOOSE YOUR HERO", UiSkin.Title);
+        GUI.Label(new Rect(x + 28f, y + 54f, w - 56f, 24f), "Your choice starts the Dota × PEAK run.", UiSkin.Muted);
+
+        DrawHeroButton(new Rect(x + 28f, y + 94f, 258f, 185f), "PUDGE", "Q  MEAT HOOK", "Mobility / rescue", Hero.Pudge);
+        DrawHeroButton(new Rect(x + 314f, y + 94f, 258f, 185f), "TINY", "Q  TOSS", "Traversal / impact", Hero.Tiny);
+
+        GUI.Label(new Rect(x + 28f, y + 288f, w - 56f, 24f), "[1] PUDGE     [2] TINY", UiSkin.Muted);
     }
 
-    private void DrawShop(float x, float y, float width)
+    private void DrawHeroButton(Rect rect, string name, string ability, string role, Hero selected)
     {
-        GUI.Label(new Rect(x + 24f, y, width - 48f, 32f), "DOTA SHOP", UiSkin.Title);
-        DrawShopCard(new Rect(x + 24f, y + 48f, 210f, 130f), "BOOTS OF SPEED", "25 G", "Movement +12%", savedBoots.Value, "1");
-        DrawShopCard(new Rect(x + 246f, y + 48f, 210f, 130f), "BLINK", "50 G", "10m traversal / 12s", savedBlink.Value, "2");
-        GUI.Label(new Rect(x + 24f, y + 196f, width - 48f, 26f), "Sell nearby PEAK loot with R.", UiSkin.Body);
-        GUI.Label(new Rect(x + 24f, y + 228f, width - 48f, 26f), "Gold also grows by surviving the climb.", UiSkin.Muted);
+        if (GUI.Button(rect, GUIContent.none, selected == hero ? UiSkin.SelectedCardButton : UiSkin.CardButton))
+            SelectHero(selected);
+
+        GUI.Label(new Rect(rect.x + 16f, rect.y + 14f, rect.width - 32f, 32f), name, UiSkin.Hero);
+        GUI.Label(new Rect(rect.x + 16f, rect.y + 58f, rect.width - 32f, 28f), ability, UiSkin.Gold);
+        GUI.Label(new Rect(rect.x + 16f, rect.y + 96f, rect.width - 32f, 46f), role, UiSkin.Body);
+        GUI.Label(new Rect(rect.x + 16f, rect.y + 145f, rect.width - 32f, 26f), selected == hero ? "SELECTED" : "CLICK TO SELECT", UiSkin.Muted);
     }
 
-    private void DrawCard(Rect rect, string name, string ability, string role, bool selected, string key)
+    private void DrawShopPanel()
     {
-        GUI.Box(rect, GUIContent.none, selected ? UiSkin.SelectedCard : UiSkin.Card);
-        GUI.Label(new Rect(rect.x + 16f, rect.y + 16f, rect.width - 32f, 30f), name, UiSkin.Hero);
-        GUI.Label(new Rect(rect.x + 16f, rect.y + 62f, rect.width - 32f, 26f), ability, UiSkin.Gold);
-        GUI.Label(new Rect(rect.x + 16f, rect.y + 100f, rect.width - 32f, 42f), role, UiSkin.Body);
-        GUI.Label(new Rect(rect.x + 16f, rect.y + 174f, rect.width - 32f, 24f), $"[{key}] SELECT", UiSkin.Muted);
+        float w = 300f;
+        float h = 250f;
+        float x = 24f;
+        float y = Screen.height - h - 24f;
+
+        GUI.Box(new Rect(x, y, w, h), GUIContent.none, UiSkin.Panel);
+        GUI.Label(new Rect(x + 18f, y + 14f, w - 36f, 30f), "DOTA SHOP", UiSkin.Title);
+        GUI.Label(new Rect(x + 190f, y + 18f, 90f, 24f), $"{savedGold.Value} G", UiSkin.Gold);
+
+        DrawShopButton(new Rect(x + 18f, y + 55f, w - 36f, 72f), "BOOTS OF SPEED", "25 G  •  Movement +12%", savedBoots.Value, BuyBoots);
+        DrawShopButton(new Rect(x + 18f, y + 135f, w - 36f, 72f), "BLINK", "50 G  •  10m traversal / 12s", savedBlink.Value, BuyBlink);
+
+        if (GUI.Button(new Rect(x + 18f, y + 213f, 125f, 26f), "CLOSE", UiSkin.SmallButton))
+            shopMenu = false;
+
+        GUI.Label(new Rect(x + 150f, y + 214f, 132f, 24f), $"{sellKey.Value}  SELL LOOT", UiSkin.Muted);
     }
 
-    private void DrawShopCard(Rect rect, string name, string cost, string effect, bool owned, string key)
+    private void DrawShopButton(Rect rect, string name, string info, bool owned, Action purchase)
     {
-        GUI.Box(rect, GUIContent.none, owned ? UiSkin.SelectedCard : UiSkin.Card);
-        GUI.Label(new Rect(rect.x + 14f, rect.y + 14f, rect.width - 28f, 25f), name, UiSkin.Hero);
-        GUI.Label(new Rect(rect.x + 14f, rect.y + 48f, rect.width - 28f, 25f), owned ? "OWNED" : cost, UiSkin.Gold);
-        GUI.Label(new Rect(rect.x + 14f, rect.y + 78f, rect.width - 28f, 24f), effect, UiSkin.Body);
-        if (!owned) GUI.Label(new Rect(rect.x + 14f, rect.y + 104f, rect.width - 28f, 20f), $"[{key}] BUY", UiSkin.Muted);
+        if (!owned && GUI.Button(rect, GUIContent.none, UiSkin.CardButton))
+            purchase();
+
+        GUI.Label(new Rect(rect.x + 12f, rect.y + 9f, rect.width - 24f, 24f), name, UiSkin.Hero);
+        GUI.Label(new Rect(rect.x + 12f, rect.y + 35f, rect.width - 24f, 24f), owned ? "OWNED — RESETS NEXT RUN" : info, owned ? UiSkin.Gold : UiSkin.Body);
     }
 
     private void DrawToast()
     {
         float w = 440f;
         float x = (Screen.width - w) * 0.5f;
-        float y = Screen.height - 155f;
-        GUI.Box(new Rect(x, y, w, 74f), GUIContent.none, UiSkin.Toast);
-        GUI.Label(new Rect(x + 18f, y + 10f, w - 36f, 24f), "DOTA EVENT", UiSkin.Gold);
-        GUI.Label(new Rect(x + 18f, y + 34f, w - 36f, 28f), "A mountain opportunity is active.", UiSkin.Body);
+        float y = Screen.height - 138f;
+        GUI.Box(new Rect(x, y, w, 68f), GUIContent.none, UiSkin.Toast);
+        GUI.Label(new Rect(x + 18f, y + 9f, w - 36f, 22f), eventTitle, UiSkin.Gold);
+        GUI.Label(new Rect(x + 18f, y + 32f, w - 36f, 26f), eventSubtitle, UiSkin.Body);
     }
 
     private static string CooldownText(float value) => value <= 0f ? "READY" : $"{value:0.0}s";
@@ -662,6 +735,10 @@ public sealed class Plugin : BaseUnityPlugin
         public static readonly GUIStyle Panel = Make(new Color(0.035f, 0.045f, 0.06f, 0.96f), new Color(0.75f, 0.62f, 0.28f, 1f));
         public static readonly GUIStyle Card = Make(new Color(0.055f, 0.065f, 0.085f, 0.98f), new Color(0.18f, 0.2f, 0.24f, 1f));
         public static readonly GUIStyle SelectedCard = Make(new Color(0.09f, 0.075f, 0.045f, 0.99f), new Color(0.86f, 0.68f, 0.25f, 1f));
+        public static readonly GUIStyle CardButton = Make(new Color(0.055f, 0.065f, 0.085f, 0.98f), new Color(0.28f, 0.31f, 0.36f, 1f));
+        public static readonly GUIStyle SelectedCardButton = Make(new Color(0.09f, 0.075f, 0.045f, 0.99f), new Color(0.86f, 0.68f, 0.25f, 1f));
+        public static readonly GUIStyle ShopButton = Make(new Color(0.07f, 0.065f, 0.045f, 0.98f), new Color(0.86f, 0.68f, 0.25f, 1f));
+        public static readonly GUIStyle SmallButton = Make(new Color(0.055f, 0.065f, 0.085f, 0.98f), new Color(0.28f, 0.31f, 0.36f, 1f));
         public static readonly GUIStyle Toast = Make(new Color(0.035f, 0.045f, 0.06f, 0.98f), new Color(0.86f, 0.68f, 0.25f, 1f));
         public static readonly GUIStyle Title = Text(22, FontStyle.Bold, new Color(0.92f, 0.86f, 0.7f, 1f));
         public static readonly GUIStyle Hero = Text(18, FontStyle.Bold, new Color(0.88f, 0.88f, 0.9f, 1f));
