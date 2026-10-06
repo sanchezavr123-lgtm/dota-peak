@@ -1,4 +1,19 @@
 {
-  "version": 1,
-  "items": []
+  "version": 2,
+  "items": [
+    {
+      "id": "blink",
+      "name": "Blink",
+      "status": "prototype_candidate",
+      "effect": "short_traversal_reposition",
+      "notes": "Adapted to PEAK traversal; exact implementation waits for verified player movement API."
+    },
+    {
+      "id": "boots_of_speed",
+      "name": "Boots of Speed",
+      "status": "prototype_candidate",
+      "effect": "movement_speed_bonus",
+      "notes": "Applied through verified PEAK movement/stat hooks."
+    }
+  ]
 }
