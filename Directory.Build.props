@@ -5,6 +5,7 @@
     <PeakGameRootDir Condition="'$(PeakGameRootDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\PEAK</PeakGameRootDir>
     <ManagedDir>$(PeakGameRootDir)\PEAK_Data\Managed\</ManagedDir>
     <PeakPluginsDir Condition="'$(PeakPluginsDir)' == ''">$(PeakGameRootDir)\BepInEx\plugins\</PeakPluginsDir>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <Import Project="$(SolutionRoot)Config.Build.user.props" Condition="Exists('$(SolutionRoot)Config.Build.user.props')" />
 </Project>
