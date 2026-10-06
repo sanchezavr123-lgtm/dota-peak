@@ -1,13 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>DotaPeak</RootNamespace>
-    <AssemblyName>DotaPeak</AssemblyName>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>com.github.sanchezavr123-lgtm.DotaPeak</AssemblyName>
+    <AssemblyTitle>Dota x PEAK</AssemblyTitle>
+    <Version>0.1.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="BepInEx.Core" Version="5.4.23.3" />
-  </ItemGroup>
 </Project>
