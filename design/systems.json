@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "systems": [
+    {
+      "id": "hero_selection",
+      "status": "planned",
+      "host": "PEAK"
+    },
+    {
+      "id": "abilities",
+      "status": "planned",
+      "host": "PEAK"
+    },
+    {
+      "id": "gold",
+      "status": "planned",
+      "host": "PEAK"
+    },
+    {
+      "id": "shop",
+      "status": "planned",
+      "host": "PEAK"
+    },
+    {
+      "id": "items",
+      "status": "planned",
+      "host": "PEAK"
+    }
+  ]
+}
