@@ -55,7 +55,7 @@ public sealed class Plugin : BaseUnityPlugin
 
     private void UsePudgeHook()
     {
-        Camera? camera = Camera.main;
+        Camera camera = Camera.main;
         if (camera == null) return;
 
         Ray ray = new(camera.transform.position, camera.transform.forward);
@@ -69,9 +69,22 @@ public sealed class Plugin : BaseUnityPlugin
         Transform player = FindPlayerRoot(camera.transform);
         if (player == null) return;
 
-        Vector3 direction = hit.point - player.position;
-        if (direction.magnitude > 2.5f)
-            player.position = hit.point - direction.normalized * 2f;
+        Vector3 offset = hit.point - player.position;
+        if (offset.magnitude > 2.5f)
+        {
+            Vector3 destination = hit.point - offset.normalized * 2f;
+            CharacterController controller = player.GetComponent<CharacterController>();
+            if (controller != null)
+            {
+                controller.enabled = false;
+                player.position = destination;
+                controller.enabled = true;
+            }
+            else
+            {
+                player.position = destination;
+            }
+        }
 
         cooldown = 4f;
         Log.LogInfo($"Pudge Hook -> {hit.point}");
@@ -83,7 +96,7 @@ public sealed class Plugin : BaseUnityPlugin
         Log.LogInfo("Juggernaut Blade Fury prototype activated for 3 seconds.");
     }
 
-    private static Transform? FindPlayerRoot(Transform camera)
+    private static Transform FindPlayerRoot(Transform camera)
     {
         Transform current = camera;
         while (current.parent != null && current.parent != current)
