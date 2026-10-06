@@ -1,15 +1,17 @@
 {
-  "version": 1,
-  "status": "technical_verification_required",
+  "version": 2,
+  "status": "in_game_verification_required",
   "checks": [
-    "PEAK game assemblies identified",
-    "BepInEx reference version verified",
-    "Player movement API verified",
-    "Input API verified",
-    "Scene/run lifecycle hook verified",
-    "Build dependency paths verified",
-    "Local build passes",
-    "Plugin loads in PEAK"
+    {"id":"peak_game_assemblies","status":"verified"},
+    {"id":"bepinex_reference_version","status":"verified"},
+    {"id":"player_movement_api","status":"verified","evidence":"PEAK Character.localCharacter, Character.WarpPlayer(Vector3,bool), Character.refs.movement.movementModifier used by current community mods."},
+    {"id":"input_api","status":"verified"},
+    {"id":"scene_run_lifecycle_hook","status":"pending"},
+    {"id":"build_dependency_paths","status":"verified"},
+    {"id":"local_build_passes","status":"verified","notes":"0.1.x build was confirmed on the user's PC; 0.3.0 still needs a fresh build."},
+    {"id":"plugin_loads_in_peak","status":"verified","notes":"0.1.0 loaded successfully in the user's PEAK log."},
+    {"id":"0_3_build","status":"pending"},
+    {"id":"0_3_plugin_load","status":"pending"}
   ],
-  "rule": "No playable-build claim before the final two checks pass."
+  "rule": "No 0.3.0 playable-build claim before the final two checks pass."
 }
