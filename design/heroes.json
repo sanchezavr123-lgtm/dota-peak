@@ -1,21 +1,7 @@
 {
   "version": 2,
   "heroes": [
-    {
-      "id": "pudge",
-      "name": "Pudge",
-      "status": "prototype_candidate",
-      "abilities": ["meat_hook", "rot"],
-      "starting_stats": {},
-      "notes": "First prototype. Hook becomes a PEAK traversal/interact mechanic; Rot becomes a short-range risk/reward effect."
-    },
-    {
-      "id": "juggernaut",
-      "name": "Juggernaut",
-      "status": "prototype_candidate",
-      "abilities": ["blade_fury", "healing_ward"],
-      "starting_stats": {},
-      "notes": "Second prototype. Abilities are adapted to climbing/survival rather than copied literally."
-    }
+    {"id":"pudge","name":"Pudge","status":"prototype_candidate","abilities":["meat_hook","rot"],"starting_stats":{},"notes":"First prototype. Hook becomes a PEAK traversal/interact mechanic; Rot becomes a short-range risk/reward effect."},
+    {"id":"juggernaut","name":"Juggernaut","status":"prototype_candidate","abilities":["blade_fury","healing_ward"],"starting_stats":{},"notes":"Second prototype. Abilities are adapted to climbing/survival rather than copied literally."}
   ]
 }
