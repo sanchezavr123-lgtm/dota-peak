@@ -34,6 +34,7 @@ public sealed class Plugin : BaseUnityPlugin
     private float eventTimer;
     private float eventMessageTimer;
     private float cameraShake;
+    private Vector3 cameraShakeOffset;
     private float pullTime;
     private bool heroMenu;
     private bool shopMenu;
@@ -326,9 +327,19 @@ public sealed class Plugin : BaseUnityPlugin
     private void UpdateCameraShake()
     {
         Camera? cam = Camera.main;
-        if (cam == null || cameraShake <= 0f) return;
+        if (cam == null) return;
+
+        cam.transform.localPosition -= cameraShakeOffset;
+        cameraShakeOffset = Vector3.zero;
+
+        if (cameraShake <= 0f) return;
+
         float strength = cameraShake * 0.045f;
-        cam.transform.localPosition += new Vector3(UnityEngine.Random.Range(-strength, strength), UnityEngine.Random.Range(-strength, strength), 0f);
+        cameraShakeOffset = new Vector3(
+            UnityEngine.Random.Range(-strength, strength),
+            UnityEngine.Random.Range(-strength, strength),
+            0f);
+        cam.transform.localPosition += cameraShakeOffset;
     }
 
     private void UseTinyToss()
