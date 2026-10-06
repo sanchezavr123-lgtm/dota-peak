@@ -15,6 +15,6 @@ public sealed class Plugin : BaseUnityPlugin
     private void Awake()
     {
         Log = Logger;
-        Log.LogInfo($"{PluginName} {PluginVersion} loaded. Prototype systems are not enabled yet.");
+        Log.LogInfo($"{PluginName} loaded. PEAK host confirmed; prototype systems awaiting verified game APIs.");
     }
 }
