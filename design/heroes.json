@@ -1,7 +1,8 @@
 {
-  "version": 3,
+  "version": 4,
+  "public_target": "v1.0",
   "heroes": [
-    {"id":"pudge","name":"Pudge","status":"implemented_prototype","abilities":["meat_hook","rot"],"starting_stats":{},"notes":"Q performs a geometry-targeted traversal hook with cooldown and visual line. Rot remains the next Pudge gameplay layer."},
-    {"id":"juggernaut","name":"Juggernaut","status":"implemented_prototype","abilities":["blade_fury","healing_ward"],"starting_stats":{},"notes":"Q temporarily multiplies PEAK movement speed by 1.35 for 3 seconds. Healing Ward remains queued."}
+    {"id":"pudge","name":"Pudge","status":"v1_0_implementation","abilities":["meat_hook","rot"],"notes":"Physical hook projectile, segmented chain, impact feedback and real PEAK-native traversal. 8s cooldown including misses."},
+    {"id":"tiny","name":"Tiny","status":"v1_0_implementation","abilities":["toss","avalanche"],"notes":"Replaces Juggernaut. Controlled short traversal impulse with earth-tremor visuals and 10s cooldown."}
   ]
 }
