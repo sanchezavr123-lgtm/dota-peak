@@ -1,24 +1,32 @@
-# Dota × PEAK
+# Dota x PEAK
 
-A solo PEAK mod that mixes Dota-style heroes, abilities, gold, items and shop progression into the climbing/survival loop.
+A solo PEAK mod mixing Dota-inspired heroes and abilities into PEAK's climbing loop.
 
-## Current design
+## Current MVP
 
-- Host game: PEAK
-- Mode: Solo
-- Core loop: climb, survive, collect resources/gold, buy upgrades, reach the top
-- Hero layer: selectable Dota-inspired heroes with recognizable abilities
-- Progression: gold + shop + items
-- Design goal: a deliberately messy crossover where Dota mechanics interact with PEAK movement and traversal
+- Host: PEAK
+- Solo-focused
+- F1 opens hero selection
+- 1 selects Pudge
+- 2 selects Juggernaut
+- Q activates the selected hero ability
+- Pudge Hook prototype uses world geometry as a traversal target
+- Juggernaut Blade Fury is currently a timed ability-state prototype
 
-## Status
+## Build
 
-Prototype planning stage. No playable release yet.
+This project follows the current PEAK BepInEx project layout. The PEAK template requires .NET SDK 10+ and supports local game assembly references. PEAK currently does not have a GameLibs package suitable for GitHub Actions builds.
 
-## Development rules
+1. Install .NET SDK 10+.
+2. Copy Config.Build.user.props.template to Config.Build.user.props if the default Steam path is not correct.
+3. Run dotnet build -c Release from the repository root.
+4. The Release build deploys DotaPeak.dll to PEAK/BepInEx/plugins/.
+5. Launch PEAK and check BepInEx/LogOutput.log for DotaPeak 0.1.0 loaded.
 
-The JSON sheets in `design/` are the source of truth. Code should be generated/implemented from those sheets and every referenced value must be verified before a build.
+## Design source of truth
 
-## Safety / compatibility
+The JSON files in design/ define the intended heroes, systems, items, and preflight checks.
 
-This project targets PEAK as the host game. It does not modify the Dota 2 client or bypass Dota 2 anti-cheat.
+## Compatibility
+
+Target host is PEAK. This project does not modify the Dota 2 client or bypass Dota 2 anti-cheat.
