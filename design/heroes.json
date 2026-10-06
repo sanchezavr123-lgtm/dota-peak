@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "heroes": [
+    {
+      "id": "pudge",
+      "name": "Pudge",
+      "status": "planned",
+      "abilities": [],
+      "starting_stats": {},
+      "notes": "First prototype hero candidate; abilities must be adapted to PEAK interaction while remaining recognizable."
+    },
+    {
+      "id": "juggernaut",
+      "name": "Juggernaut",
+      "status": "planned",
+      "abilities": [],
+      "starting_stats": {},
+      "notes": "Second prototype candidate."
+    }
+  ]
+}
